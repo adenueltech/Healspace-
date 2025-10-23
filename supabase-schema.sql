@@ -1,8 +1,8 @@
 -- Supabase Schema for HealSpace
 -- Run this SQL in your Supabase SQL Editor
 
--- Enable Row Level Security
-ALTER DATABASE postgres SET "app.jwt_secret" TO 'your-jwt-secret';
+-- Note: Remove the ALTER DATABASE line if you get permission errors
+-- The JWT secret is already configured in Supabase
 
 -- Create custom types
 CREATE TYPE mood_level AS ENUM ('very_low', 'low', 'neutral', 'high', 'very_high');

@@ -11,7 +11,8 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Home } from "lucide-react"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Home, Mail, CheckCircle } from "lucide-react"
 import { signUp } from "@/lib/auth"
 import { toast } from "sonner"
 
@@ -23,6 +24,7 @@ export default function GetStartedPage() {
   const [anonymous, setAnonymous] = useState(false)
   const [terms, setTerms] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
+  const [showVerificationModal, setShowVerificationModal] = useState(false)
   const router = useRouter()
 
   const handleSignUp = async (e: React.FormEvent) => {
@@ -42,8 +44,7 @@ export default function GetStartedPage() {
 
     try {
       await signUp(email, password, name)
-      toast.success("Account created successfully! Welcome to HealSpace.")
-      router.push("/dashboard")
+      setShowVerificationModal(true)
     } catch (error) {
       toast.error("Failed to create account. Please try again.")
       console.error("Sign up error:", error)
@@ -242,6 +243,55 @@ export default function GetStartedPage() {
             anonymous.
           </p>
         </div>
+
+        {/* Verification Email Modal */}
+        <Dialog open={showVerificationModal} onOpenChange={setShowVerificationModal}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <div className="mx-auto mb-4">
+                <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center">
+                  <Mail className="w-8 h-8 text-blue-600" />
+                </div>
+              </div>
+              <DialogTitle className="text-center text-xl">Check Your Email</DialogTitle>
+              <DialogDescription className="text-center">
+                We've sent a verification link to <strong>{email}</strong>
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div className="text-center space-y-2">
+                <p className="text-sm text-muted-foreground">
+                  Click the link in the email to verify your account and complete your registration.
+                </p>
+                <div className="flex items-center justify-center gap-2 text-sm text-green-600 bg-green-50 p-3 rounded-lg">
+                  <CheckCircle className="w-4 h-4" />
+                  <span>Verification link sent successfully!</span>
+                </div>
+              </div>
+              <div className="flex gap-3">
+                <Button
+                  variant="outline"
+                  className="flex-1"
+                  onClick={() => setShowVerificationModal(false)}
+                >
+                  Close
+                </Button>
+                <Button
+                  className="flex-1 bg-primary hover:bg-accent"
+                  onClick={() => {
+                    setShowVerificationModal(false)
+                    router.push('/signin')
+                  }}
+                >
+                  Go to Login
+                </Button>
+              </div>
+              <p className="text-xs text-center text-muted-foreground">
+                Didn't receive the email? Check your spam folder or contact support.
+              </p>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   )

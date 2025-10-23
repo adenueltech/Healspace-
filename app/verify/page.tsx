@@ -69,20 +69,20 @@ export default function VerifyPage() {
         <CardContent>
           {status === 'success' && (
             <div className="space-y-4">
-              <div className="text-center p-4 bg-green-50 border border-green-200 rounded-lg">
-                <CheckCircle className="h-8 w-8 text-green-600 mx-auto mb-2" />
-                <p className="text-sm font-medium text-green-800">
-                  You have been authenticated!
-                </p>
-                <p className="text-xs text-green-700 mt-1">
-                  Your email has been successfully verified.
+              <div className="text-center p-6 bg-green-50 border border-green-200 rounded-lg">
+                <CheckCircle className="h-12 w-12 text-green-600 mx-auto mb-3" />
+                <h2 className="text-lg font-semibold text-green-800 mb-2">
+                  You have been authenticated successfully!
+                </h2>
+                <p className="text-sm text-green-700">
+                  Your email has been verified and your account is now active.
                 </p>
               </div>
               <p className="text-sm text-muted-foreground text-center">
-                You can now proceed to login to your account.
+                You can now login to access your HealSpace account and start your mental wellness journey.
               </p>
-              <Button onClick={handleContinue} className="w-full bg-primary hover:bg-accent">
-                Proceed to Login
+              <Button onClick={handleContinue} className="w-full bg-primary hover:bg-accent text-white py-3">
+                Login to Your Account
               </Button>
             </div>
           )}

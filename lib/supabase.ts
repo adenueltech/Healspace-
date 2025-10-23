@@ -22,6 +22,8 @@ export interface ChatMessage {
   created_at: string
   is_anonymous: boolean
   room_id?: string
+  is_ai_conversation?: boolean
+  is_ai_response?: boolean
 }
 
 export interface JournalEntry {

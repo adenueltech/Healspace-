@@ -72,6 +72,8 @@ CREATE TABLE chat_messages (
   content TEXT NOT NULL,
   room_id TEXT, -- For group chats or specific rooms
   is_anonymous BOOLEAN DEFAULT true,
+  is_ai_conversation BOOLEAN DEFAULT false,
+  is_ai_response BOOLEAN DEFAULT false,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL
 );
 

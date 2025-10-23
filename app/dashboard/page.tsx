@@ -16,6 +16,7 @@ import {
   Meh,
   Frown,
   ArrowRight,
+  Bot,
 } from "lucide-react"
 import { getCurrentUser } from "@/lib/auth"
 import { getDashboardStats, getMoodHistory, getRecentActivity, getUpcomingSessions } from "@/lib/dashboard"
@@ -154,6 +155,14 @@ export default function DashboardPage() {
                   <Heart className="h-5 w-5 mb-2 text-primary" />
                   <span className="font-semibold">Log Your Mood</span>
                   <span className="text-xs text-muted-foreground mt-1">Track how you're feeling</span>
+                </Button>
+                <Button
+                  variant="outline"
+                  className="h-auto flex-col items-start p-4 border-primary/30 hover:bg-secondary bg-transparent"
+                >
+                  <Bot className="h-5 w-5 mb-2 text-primary" />
+                  <span className="font-semibold">Chat with AI</span>
+                  <span className="text-xs text-muted-foreground mt-1">Get instant support</span>
                 </Button>
                 <Button
                   variant="outline"

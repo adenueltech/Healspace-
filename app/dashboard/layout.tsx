@@ -10,6 +10,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [chatboxOpen, setChatboxOpen] = useState(false)
 
+  // fhfuhf
+
   return (
     <div className="min-h-screen bg-background">
       <DashboardSidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />

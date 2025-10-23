@@ -69,11 +69,20 @@ export default function VerifyPage() {
         <CardContent>
           {status === 'success' && (
             <div className="space-y-4">
+              <div className="text-center p-4 bg-green-50 border border-green-200 rounded-lg">
+                <CheckCircle className="h-8 w-8 text-green-600 mx-auto mb-2" />
+                <p className="text-sm font-medium text-green-800">
+                  You have been authenticated!
+                </p>
+                <p className="text-xs text-green-700 mt-1">
+                  Your email has been successfully verified.
+                </p>
+              </div>
               <p className="text-sm text-muted-foreground text-center">
-                You have been successfully authenticated. You can now log in to your account.
+                You can now proceed to login to your account.
               </p>
               <Button onClick={handleContinue} className="w-full bg-primary hover:bg-accent">
-                Continue to Login
+                Proceed to Login
               </Button>
             </div>
           )}

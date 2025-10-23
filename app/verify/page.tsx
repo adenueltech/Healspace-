@@ -12,7 +12,7 @@ export default function VerifyPage() {
   const searchParams = useSearchParams()
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading')
   const [message, setMessage] = useState('')
-
+// fgfgf
   useEffect(() => {
     const handleEmailVerification = async () => {
       try {

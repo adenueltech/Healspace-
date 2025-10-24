@@ -1,12 +1,15 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Textarea } from "@/components/ui/textarea"
 import { Input } from "@/components/ui/input"
-import { BookOpen, Plus, Search, Calendar, Smile, Meh, Frown, Heart, Star, Trash2 } from "lucide-react"
+import { BookOpen, Plus, Search, Calendar, Smile, Meh, Frown, Heart, Star, Trash2, Laugh, Angry } from "lucide-react"
+import { getCurrentUser } from "@/lib/auth"
+import { createJournalEntry } from "@/lib/dashboard"
+import type { User } from "@/lib/supabase"
 
 const mockEntries = [
   {
@@ -47,37 +50,69 @@ const mockEntries = [
   },
 ]
 
-const moodIcons = {
-  happy: { icon: Smile, color: "text-green-600", bg: "bg-green-100" },
-  neutral: { icon: Meh, color: "text-yellow-600", bg: "bg-yellow-100" },
-  sad: { icon: Frown, color: "text-red-600", bg: "bg-red-100" },
+const moodIcons: Record<string, { icon: React.ComponentType<any>, color: string, bg: string }> = {
+   amazing: { icon: Laugh, color: "text-green-700", bg: "bg-green-100" },
+   good: { icon: Smile, color: "text-green-600", bg: "bg-green-100" },
+   okay: { icon: Meh, color: "text-yellow-600", bg: "bg-yellow-100" },
+   difficult: { icon: Frown, color: "text-orange-600", bg: "bg-orange-100" },
+   terrible: { icon: Angry, color: "text-red-600", bg: "bg-red-100" },
 }
 
 export default function JournalPage() {
-  const [entries, setEntries] = useState(mockEntries)
-  const [isWriting, setIsWriting] = useState(false)
-  const [newEntry, setNewEntry] = useState({ title: "", content: "", mood: "neutral", tags: "" })
-  const [searchQuery, setSearchQuery] = useState("")
+   const [user, setUser] = useState<User | null>(null)
+   const [entries, setEntries] = useState(mockEntries)
+   const [isWriting, setIsWriting] = useState(false)
+   const [newEntry, setNewEntry] = useState({ title: "", content: "", mood: "okay", tags: "" })
+   const [searchQuery, setSearchQuery] = useState("")
+   const [loading, setLoading] = useState(true)
+   const [saving, setSaving] = useState(false)
 
-  const handleSaveEntry = () => {
-    if (!newEntry.title || !newEntry.content) return
+   useEffect(() => {
+     async function initializeJournal() {
+       try {
+         const currentUser = await getCurrentUser()
+         if (!currentUser) return
 
-    const entry = {
-      id: entries.length + 1,
-      title: newEntry.title,
-      content: newEntry.content,
-      date: new Date().toISOString().split("T")[0],
-      mood: newEntry.mood as "happy" | "neutral" | "sad",
-      tags: newEntry.tags
-        .split(",")
-        .map((tag) => tag.trim())
-        .filter(Boolean),
-    }
+         setUser(currentUser)
+         // Load journal entries from database would go here
+       } catch (error) {
+         console.error("Failed to load journal:", error)
+       } finally {
+         setLoading(false)
+       }
+     }
 
-    setEntries([entry, ...entries])
-    setNewEntry({ title: "", content: "", mood: "neutral", tags: "" })
-    setIsWriting(false)
-  }
+     initializeJournal()
+   }, [])
+
+   const handleSaveEntry = async () => {
+     if (!newEntry.title || !newEntry.content || !user) return
+
+     setSaving(true)
+     try {
+       const moodScore = { amazing: 5, good: 4, okay: 3, difficult: 2, terrible: 1 }[newEntry.mood] || 3
+       const tags = newEntry.tags.split(",").map(tag => tag.trim()).filter(Boolean)
+
+       await createJournalEntry(user.id, newEntry.title, newEntry.content, tags, moodScore)
+
+       const entry = {
+         id: entries.length + 1,
+         title: newEntry.title,
+         content: newEntry.content,
+         date: new Date().toISOString().split("T")[0],
+         mood: newEntry.mood as keyof typeof moodIcons,
+         tags,
+       }
+
+       setEntries([entry, ...entries])
+       setNewEntry({ title: "", content: "", mood: "okay", tags: "" })
+       setIsWriting(false)
+     } catch (error) {
+       console.error("Failed to save journal entry:", error)
+     } finally {
+       setSaving(false)
+     }
+   }
 
   const filteredEntries = entries.filter(
     (entry) =>
@@ -85,6 +120,20 @@ export default function JournalPage() {
       entry.content.toLowerCase().includes(searchQuery.toLowerCase()) ||
       entry.tags.some((tag) => tag.toLowerCase().includes(searchQuery.toLowerCase())),
   )
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-3xl font-bold text-sage-800">Journal</h1>
+          <p className="text-sage-600 mt-2">Express your thoughts and track your mental health journey</p>
+        </div>
+        <div className="flex items-center justify-center h-64">
+          <div className="text-sage-600">Loading journal...</div>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-6">
@@ -166,16 +215,19 @@ export default function JournalPage() {
 
             <div>
               <label className="text-sm font-medium text-sage-700 mb-2 block">How are you feeling?</label>
-              <div className="flex gap-3">
+              <div className="grid grid-cols-5 gap-2">
                 {Object.entries(moodIcons).map(([mood, { icon: Icon, color, bg }]) => (
                   <button
                     key={mood}
                     onClick={() => setNewEntry({ ...newEntry, mood })}
-                    className={`p-3 rounded-lg border-2 transition-all ${
+                    className={`p-3 rounded-lg border-2 transition-all flex flex-col items-center gap-1 ${
                       newEntry.mood === mood ? `${bg} border-sage-400` : "bg-white border-sage-200 hover:bg-sage-50"
                     }`}
                   >
                     <Icon className={`w-6 h-6 ${newEntry.mood === mood ? color : "text-sage-400"}`} />
+                    <span className={`text-xs capitalize ${newEntry.mood === mood ? color : "text-sage-600"}`}>
+                      {mood}
+                    </span>
                   </button>
                 ))}
               </div>
@@ -202,13 +254,14 @@ export default function JournalPage() {
             </div>
 
             <div className="flex gap-3">
-              <Button onClick={handleSaveEntry} className="bg-sage-600 hover:bg-sage-700">
-                Save Entry
+              <Button onClick={handleSaveEntry} className="bg-sage-600 hover:bg-sage-700" disabled={saving}>
+                {saving ? "Saving..." : "Save Entry"}
               </Button>
               <Button
                 onClick={() => setIsWriting(false)}
                 variant="outline"
                 className="border-sage-200 text-sage-700 hover:bg-sage-50 bg-transparent"
+                disabled={saving}
               >
                 Cancel
               </Button>

@@ -1,11 +1,14 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Users, Search, Clock, Lock, Globe, Plus, TrendingUp } from "lucide-react"
+import { getCurrentUser } from "@/lib/auth"
+import { getSupportGroups, joinSupportGroup } from "@/lib/dashboard"
+import type { User, SupportGroup } from "@/lib/supabase"
 
 const mockGroups = [
   {
@@ -78,17 +81,88 @@ const mockGroups = [
 
 const categories = ["All", "Anxiety", "Depression", "Stress", "Student Life", "Wellness", "Identity"]
 
-export default function GroupsPage() {
-  const [selectedCategory, setSelectedCategory] = useState("All")
-  const [searchQuery, setSearchQuery] = useState("")
+interface ExtendedSupportGroup extends SupportGroup {
+   members: number
+   online: number
+   privacy: string
+   nextSession: string
+   joined: boolean
+}
 
-  const filteredGroups = mockGroups.filter((group) => {
-    const matchesCategory = selectedCategory === "All" || group.category === selectedCategory
-    const matchesSearch =
-      group.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      group.description.toLowerCase().includes(searchQuery.toLowerCase())
-    return matchesCategory && matchesSearch
-  })
+export default function GroupsPage() {
+   const [user, setUser] = useState<User | null>(null)
+   const [groups, setGroups] = useState<ExtendedSupportGroup[]>([])
+   const [selectedCategory, setSelectedCategory] = useState("All")
+   const [searchQuery, setSearchQuery] = useState("")
+   const [loading, setLoading] = useState(true)
+   const [joining, setJoining] = useState<string | null>(null)
+
+   useEffect(() => {
+     async function initializeGroups() {
+       try {
+         const currentUser = await getCurrentUser()
+         if (!currentUser) return
+
+         setUser(currentUser)
+
+         // Load support groups from database
+         const supportGroups = await getSupportGroups()
+         const formattedGroups = supportGroups.map(group => ({
+           ...group,
+           members: 0, // Mock for now
+           online: Math.floor(Math.random() * 20), // Mock online count
+           privacy: group.is_private ? "private" : "public",
+           nextSession: "Today, 3:00 PM", // Mock session time
+           joined: false, // Will be determined by membership check
+         }))
+         setGroups(formattedGroups)
+       } catch (error) {
+         console.error("Failed to load support groups:", error)
+       } finally {
+         setLoading(false)
+       }
+     }
+
+     initializeGroups()
+   }, [])
+
+   const handleJoinGroup = async (groupId: string) => {
+     if (!user) return
+
+     setJoining(groupId)
+     try {
+       await joinSupportGroup(user.id, groupId)
+       setGroups(prev => prev.map(group =>
+         group.id === groupId ? { ...group, joined: true } : group
+       ))
+     } catch (error) {
+       console.error("Failed to join group:", error)
+     } finally {
+       setJoining(null)
+     }
+   }
+
+   const filteredGroups = groups.filter((group) => {
+     const matchesCategory = selectedCategory === "All" || group.category === selectedCategory
+     const matchesSearch =
+       group.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+       group.description.toLowerCase().includes(searchQuery.toLowerCase())
+     return matchesCategory && matchesSearch
+   })
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-3xl font-bold text-sage-800">Support Groups</h1>
+          <p className="text-sage-600 mt-2">Join communities of people who understand what you're going through</p>
+        </div>
+        <div className="flex items-center justify-center h-64">
+          <div className="text-sage-600">Loading support groups...</div>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-6">
@@ -221,7 +295,13 @@ export default function GroupsPage() {
                     </Button>
                   </div>
                 ) : (
-                  <Button className="w-full bg-sage-600 hover:bg-sage-700">Join Group</Button>
+                  <Button
+                    className="w-full bg-sage-600 hover:bg-sage-700"
+                    onClick={() => handleJoinGroup(group.id)}
+                    disabled={joining === group.id}
+                  >
+                    {joining === group.id ? "Joining..." : "Join Group"}
+                  </Button>
                 )}
               </div>
             </div>

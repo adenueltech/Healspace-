@@ -1,10 +1,13 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Textarea } from "@/components/ui/textarea"
 import { Smile, Meh, Frown, Angry, Laugh, Calendar, TrendingUp, TrendingDown, Minus } from "lucide-react"
+import { getCurrentUser } from "@/lib/auth"
+import { logMood, getMoodHistory } from "@/lib/dashboard"
+import type { User } from "@/lib/supabase"
 
 const moodOptions = [
   { value: 5, label: "Amazing", icon: Laugh, color: "text-green-600", bg: "bg-green-100", border: "border-green-400" },
@@ -43,25 +46,63 @@ const factors = [
 ]
 
 export default function MoodTrackerPage() {
-  const [selectedMood, setSelectedMood] = useState<number | null>(null)
-  const [note, setNote] = useState("")
-  const [selectedFactors, setSelectedFactors] = useState<string[]>([])
-  const [moodHistory, setMoodHistory] = useState(mockMoodHistory)
+   const [user, setUser] = useState<User | null>(null)
+   const [selectedMood, setSelectedMood] = useState<number | null>(null)
+   const [note, setNote] = useState("")
+   const [selectedFactors, setSelectedFactors] = useState<string[]>([])
+   const [moodHistory, setMoodHistory] = useState(mockMoodHistory)
+   const [loading, setLoading] = useState(true)
+   const [saving, setSaving] = useState(false)
 
-  const handleSaveMood = () => {
-    if (selectedMood === null) return
+   useEffect(() => {
+     async function initializeMoodTracker() {
+       try {
+         const currentUser = await getCurrentUser()
+         if (!currentUser) return
 
-    const newEntry = {
-      date: new Date().toISOString().split("T")[0],
-      mood: selectedMood,
-      note: note,
-    }
+         setUser(currentUser)
 
-    setMoodHistory([newEntry, ...moodHistory])
-    setSelectedMood(null)
-    setNote("")
-    setSelectedFactors([])
-  }
+         // Load mood history from database
+         const history = await getMoodHistory(currentUser.id, 30)
+         const formattedHistory = history.map(entry => ({
+           date: new Date(entry.created_at).toISOString().split("T")[0],
+           mood: entry.mood_score,
+           note: "",
+         }))
+         setMoodHistory(formattedHistory)
+       } catch (error) {
+         console.error("Failed to load mood history:", error)
+       } finally {
+         setLoading(false)
+       }
+     }
+
+     initializeMoodTracker()
+   }, [])
+
+   const handleSaveMood = async () => {
+     if (selectedMood === null || !user) return
+
+     setSaving(true)
+     try {
+       await logMood(user.id, selectedMood, selectedFactors, note)
+
+       const newEntry = {
+         date: new Date().toISOString().split("T")[0],
+         mood: selectedMood,
+         note: note,
+       }
+
+       setMoodHistory([newEntry, ...moodHistory])
+       setSelectedMood(null)
+       setNote("")
+       setSelectedFactors([])
+     } catch (error) {
+       console.error("Failed to save mood:", error)
+     } finally {
+       setSaving(false)
+     }
+   }
 
   const toggleFactor = (factor: string) => {
     setSelectedFactors((prev) => (prev.includes(factor) ? prev.filter((f) => f !== factor) : [...prev, factor]))
@@ -77,6 +118,20 @@ export default function MoodTrackerPage() {
       : Number.parseFloat(lastWeekAverage) < Number.parseFloat(averageMood)
         ? "down"
         : "stable"
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-3xl font-bold text-sage-800">Mood Tracker</h1>
+          <p className="text-sage-600 mt-2">Track your emotional well-being and identify patterns</p>
+        </div>
+        <div className="flex items-center justify-center h-64">
+          <div className="text-sage-600">Loading mood tracker...</div>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-6">
@@ -194,8 +249,8 @@ export default function MoodTrackerPage() {
                 />
               </div>
 
-              <Button onClick={handleSaveMood} className="bg-sage-600 hover:bg-sage-700">
-                Save Mood Entry
+              <Button onClick={handleSaveMood} className="bg-sage-600 hover:bg-sage-700" disabled={saving}>
+                {saving ? "Saving..." : "Save Mood Entry"}
               </Button>
             </>
           )}

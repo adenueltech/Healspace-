@@ -77,10 +77,13 @@ export function DashboardSidebar({ isOpen, onClose }: { isOpen: boolean; onClose
 
           {/* Crisis Support Button */}
           <div className="p-4 border-t border-border">
-            <button className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors font-medium text-sm">
+            <a
+              href="tel:988"
+              className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors font-medium text-sm"
+            >
               <AlertCircle className="h-5 w-5" />
               Crisis Support
-            </button>
+            </a>
           </div>
         </div>
       </div>

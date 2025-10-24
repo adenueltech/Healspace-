@@ -19,130 +19,8 @@ import {
   Clock,
 } from "lucide-react"
 
-const goals = [
-  {
-    id: 1,
-    title: "Daily Meditation",
-    description: "Meditate for 10 minutes every day",
-    progress: 75,
-    current: 21,
-    target: 28,
-    unit: "days",
-    category: "Mindfulness",
-    streak: 7,
-  },
-  {
-    id: 2,
-    title: "Journal Regularly",
-    description: "Write 3 journal entries per week",
-    progress: 66,
-    current: 8,
-    target: 12,
-    unit: "entries",
-    category: "Self-Reflection",
-    streak: 4,
-  },
-  {
-    id: 3,
-    title: "Attend Support Groups",
-    description: "Join 2 group sessions weekly",
-    progress: 87,
-    current: 7,
-    target: 8,
-    unit: "sessions",
-    category: "Community",
-    streak: 3,
-  },
-  {
-    id: 4,
-    title: "Mood Tracking",
-    description: "Log mood daily for a month",
-    progress: 93,
-    current: 28,
-    target: 30,
-    unit: "days",
-    category: "Awareness",
-    streak: 28,
-  },
-]
 
-const achievements = [
-  {
-    id: 1,
-    title: "First Step",
-    description: "Completed your first journal entry",
-    icon: BookOpen,
-    unlocked: true,
-    date: "Dec 15, 2024",
-  },
-  {
-    id: 2,
-    title: "Week Warrior",
-    description: "Logged mood for 7 consecutive days",
-    icon: Calendar,
-    unlocked: true,
-    date: "Dec 22, 2024",
-  },
-  {
-    id: 3,
-    title: "Community Builder",
-    description: "Joined your first support group",
-    icon: Users,
-    unlocked: true,
-    date: "Dec 28, 2024",
-  },
-  {
-    id: 4,
-    title: "Mindful Master",
-    description: "Complete 30 days of meditation",
-    icon: Brain,
-    unlocked: false,
-    date: null,
-  },
-  {
-    id: 5,
-    title: "Support Star",
-    description: "Help 10 peers in anonymous chat",
-    icon: Heart,
-    unlocked: false,
-    date: null,
-  },
-  {
-    id: 6,
-    title: "Consistency Champion",
-    description: "Maintain a 30-day streak",
-    icon: Award,
-    unlocked: false,
-    date: null,
-  },
-]
 
-const milestones = [
-  {
-    date: "Jan 8, 2025",
-    title: "Completed Anxiety Management Workshop",
-    description: "Learned new coping strategies and breathing techniques",
-    type: "achievement",
-  },
-  {
-    date: "Jan 5, 2025",
-    title: "Reached 100 Journal Entries",
-    description: "Milestone in self-reflection journey",
-    type: "milestone",
-  },
-  {
-    date: "Dec 28, 2024",
-    title: "Joined First Support Group",
-    description: "Connected with the Anxiety Support Circle community",
-    type: "achievement",
-  },
-  {
-    date: "Dec 15, 2024",
-    title: "Started HealSpace Journey",
-    description: "Took the first step towards better mental health",
-    type: "milestone",
-  },
-]
 
 export default function ProgressPage() {
   return (
@@ -211,34 +89,10 @@ export default function ProgressPage() {
           </Button>
         </div>
 
-        <div className="space-y-6">
-          {goals.map((goal) => (
-            <div key={goal.id} className="space-y-3">
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-1">
-                    <h3 className="font-semibold text-sage-800">{goal.title}</h3>
-                    <Badge className="bg-sage-100 text-sage-700 hover:bg-sage-100">{goal.category}</Badge>
-                  </div>
-                  <p className="text-sm text-sage-600">{goal.description}</p>
-                </div>
-                <div className="flex items-center gap-2 text-sm">
-                  <Clock className="w-4 h-4 text-sage-500" />
-                  <span className="text-sage-600">{goal.streak} day streak</span>
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-sage-600">
-                    {goal.current} / {goal.target} {goal.unit}
-                  </span>
-                  <span className="font-medium text-sage-800">{goal.progress}%</span>
-                </div>
-                <Progress value={goal.progress} className="h-2 bg-sage-100" />
-              </div>
-            </div>
-          ))}
+        <div className="text-center py-12 text-sage-600">
+          <Target className="w-16 h-16 mx-auto mb-4 opacity-50" />
+          <p>No goals set yet</p>
+          <p className="text-sm mt-2">Create your first goal to start tracking progress</p>
         </div>
       </Card>
 
@@ -246,35 +100,10 @@ export default function ProgressPage() {
       <Card className="p-6 border-sage-200">
         <h2 className="text-xl font-semibold text-sage-800 mb-6">Achievements</h2>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {achievements.map((achievement) => {
-            const Icon = achievement.icon
-            return (
-              <div
-                key={achievement.id}
-                className={`p-4 rounded-lg border-2 transition-all ${
-                  achievement.unlocked ? "bg-sage-50 border-sage-300" : "bg-gray-50 border-gray-200 opacity-60"
-                }`}
-              >
-                <div
-                  className={`w-12 h-12 rounded-lg flex items-center justify-center mb-3 ${
-                    achievement.unlocked ? "bg-sage-600" : "bg-gray-300"
-                  }`}
-                >
-                  <Icon className="w-6 h-6 text-white" />
-                </div>
-                <h3 className={`font-semibold mb-1 ${achievement.unlocked ? "text-sage-800" : "text-gray-600"}`}>
-                  {achievement.title}
-                </h3>
-                <p className={`text-sm mb-2 ${achievement.unlocked ? "text-sage-600" : "text-gray-500"}`}>
-                  {achievement.description}
-                </p>
-                {achievement.unlocked && achievement.date && (
-                  <p className="text-xs text-sage-500">Unlocked {achievement.date}</p>
-                )}
-              </div>
-            )
-          })}
+        <div className="text-center py-12 text-sage-600">
+          <Award className="w-16 h-16 mx-auto mb-4 opacity-50" />
+          <p>No achievements unlocked yet</p>
+          <p className="text-sm mt-2">Complete activities to unlock achievements</p>
         </div>
       </Card>
 
@@ -282,30 +111,10 @@ export default function ProgressPage() {
       <Card className="p-6 border-sage-200">
         <h2 className="text-xl font-semibold text-sage-800 mb-6">Journey Timeline</h2>
 
-        <div className="space-y-6">
-          {milestones.map((milestone, index) => (
-            <div key={index} className="flex gap-4">
-              <div className="flex flex-col items-center">
-                <div
-                  className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                    milestone.type === "achievement" ? "bg-yellow-100" : "bg-sage-100"
-                  }`}
-                >
-                  {milestone.type === "achievement" ? (
-                    <Award className="w-5 h-5 text-yellow-600" />
-                  ) : (
-                    <Smile className="w-5 h-5 text-sage-600" />
-                  )}
-                </div>
-                {index < milestones.length - 1 && <div className="w-0.5 h-full bg-sage-200 mt-2" />}
-              </div>
-              <div className="flex-1 pb-6">
-                <p className="text-sm text-sage-500 mb-1">{milestone.date}</p>
-                <h3 className="font-semibold text-sage-800 mb-1">{milestone.title}</h3>
-                <p className="text-sm text-sage-600">{milestone.description}</p>
-              </div>
-            </div>
-          ))}
+        <div className="text-center py-12 text-sage-600">
+          <Calendar className="w-16 h-16 mx-auto mb-4 opacity-50" />
+          <p>No milestones yet</p>
+          <p className="text-sm mt-2">Your journey milestones will appear here</p>
         </div>
       </Card>
     </div>

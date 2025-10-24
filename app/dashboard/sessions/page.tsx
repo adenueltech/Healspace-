@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -18,108 +18,42 @@ import {
   XCircle,
   AlertCircle,
 } from "lucide-react"
+import { getCurrentUser } from "@/lib/auth"
+import { getUpcomingSessions } from "@/lib/dashboard"
+import type { User as UserType, TherapySession } from "@/lib/supabase"
 
-const upcomingSessions = [
-  {
-    id: 1,
-    therapist: "Dr. Sarah Johnson",
-    specialty: "Anxiety & Depression",
-    date: "2025-01-10",
-    time: "2:00 PM",
-    duration: "50 min",
-    type: "video",
-    status: "confirmed",
-  },
-  {
-    id: 2,
-    therapist: "Dr. Michael Chen",
-    specialty: "Cognitive Behavioral Therapy",
-    date: "2025-01-12",
-    time: "10:00 AM",
-    duration: "50 min",
-    type: "video",
-    status: "confirmed",
-  },
-  {
-    id: 3,
-    therapist: "Dr. Emily Rodriguez",
-    specialty: "Stress Management",
-    date: "2025-01-15",
-    time: "4:00 PM",
-    duration: "50 min",
-    type: "phone",
-    status: "pending",
-  },
-]
 
-const pastSessions = [
-  {
-    id: 1,
-    therapist: "Dr. Sarah Johnson",
-    specialty: "Anxiety & Depression",
-    date: "2025-01-03",
-    time: "2:00 PM",
-    duration: "50 min",
-    type: "video",
-    notes: "Discussed coping strategies for work-related stress. Homework: practice breathing exercises daily.",
-    rating: 5,
-  },
-  {
-    id: 2,
-    therapist: "Dr. Michael Chen",
-    specialty: "Cognitive Behavioral Therapy",
-    date: "2024-12-27",
-    time: "10:00 AM",
-    duration: "50 min",
-    type: "video",
-    notes: "Worked on identifying negative thought patterns. Made good progress on reframing techniques.",
-    rating: 5,
-  },
-  {
-    id: 3,
-    therapist: "Dr. Sarah Johnson",
-    specialty: "Anxiety & Depression",
-    date: "2024-12-20",
-    time: "2:00 PM",
-    duration: "50 min",
-    type: "video",
-    notes: "Initial assessment session. Established treatment goals and discussed therapy approach.",
-    rating: 4,
-  },
-]
 
-const availableTherapists = [
-  {
-    id: 1,
-    name: "Dr. Sarah Johnson",
-    specialty: "Anxiety & Depression",
-    experience: "12 years",
-    rating: 4.9,
-    nextAvailable: "Tomorrow, 2:00 PM",
-  },
-  {
-    id: 2,
-    name: "Dr. Michael Chen",
-    specialty: "Cognitive Behavioral Therapy",
-    experience: "8 years",
-    rating: 4.8,
-    nextAvailable: "Today, 6:00 PM",
-  },
-  {
-    id: 3,
-    name: "Dr. Emily Rodriguez",
-    specialty: "Stress Management",
-    experience: "10 years",
-    rating: 4.9,
-    nextAvailable: "Jan 12, 4:00 PM",
-  },
-]
 
 export default function SessionsPage() {
-  const [activeTab, setActiveTab] = useState<"upcoming" | "past" | "book">("upcoming")
-  const [searchQuery, setSearchQuery] = useState("")
+   const [user, setUser] = useState<UserType | null>(null)
+   const [activeTab, setActiveTab] = useState<"upcoming" | "past" | "book">("upcoming")
+   const [searchQuery, setSearchQuery] = useState("")
+   const [loading, setLoading] = useState(true)
+   const [sessions, setSessions] = useState<TherapySession[]>([])
 
-  const getSessionIcon = (type: string) => {
+   useEffect(() => {
+     async function loadSessions() {
+       try {
+         const currentUser = await getCurrentUser()
+         if (!currentUser) return
+
+         setUser(currentUser)
+
+         // Load sessions from database
+         const userSessions = await getUpcomingSessions(currentUser.id)
+         setSessions(userSessions)
+       } catch (error) {
+         console.error("Failed to load sessions:", error)
+       } finally {
+         setLoading(false)
+       }
+     }
+
+     loadSessions()
+   }, [])
+
+   const getSessionIcon = (type: string) => {
     switch (type) {
       case "video":
         return Video
@@ -160,6 +94,20 @@ export default function SessionsPage() {
     }
   }
 
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-3xl font-bold text-sage-800">Therapy Sessions</h1>
+          <p className="text-sage-600 mt-2">Manage your professional therapy appointments</p>
+        </div>
+        <div className="flex items-center justify-center h-64">
+          <div className="text-sage-600">Loading sessions...</div>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -182,7 +130,7 @@ export default function SessionsPage() {
               <Calendar className="w-6 h-6 text-sage-600" />
             </div>
             <div>
-              <p className="text-2xl font-bold text-sage-800">{upcomingSessions.length}</p>
+              <p className="text-2xl font-bold text-sage-800">{sessions.length}</p>
               <p className="text-sm text-sage-600">Upcoming</p>
             </div>
           </div>
@@ -193,7 +141,7 @@ export default function SessionsPage() {
               <CheckCircle2 className="w-6 h-6 text-sage-600" />
             </div>
             <div>
-              <p className="text-2xl font-bold text-sage-800">{pastSessions.length}</p>
+              <p className="text-2xl font-bold text-sage-800">0</p>
               <p className="text-sm text-sage-600">Completed</p>
             </div>
           </div>
@@ -260,8 +208,8 @@ export default function SessionsPage() {
       {/* Upcoming Sessions */}
       {activeTab === "upcoming" && (
         <div className="space-y-4">
-          {upcomingSessions.map((session) => {
-            const Icon = getSessionIcon(session.type)
+          {sessions.length > 0 ? sessions.map((session) => {
+            const Icon = getSessionIcon("video") // Default to video for now
             return (
               <Card key={session.id} className="p-6 border-sage-200 hover:shadow-lg transition-all">
                 <div className="flex items-start justify-between">
@@ -271,16 +219,16 @@ export default function SessionsPage() {
                     </div>
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-1">
-                        <h3 className="font-semibold text-sage-800">{session.therapist}</h3>
+                        <h3 className="font-semibold text-sage-800">Therapy Session</h3>
                         {getStatusBadge(session.status)}
                       </div>
-                      <p className="text-sm text-sage-600 mb-3">{session.specialty}</p>
+                      <p className="text-sm text-sage-600 mb-3">Professional Therapy</p>
 
                       <div className="flex flex-wrap gap-4 text-sm text-sage-600">
                         <div className="flex items-center gap-1">
                           <Calendar className="w-4 h-4" />
                           <span>
-                            {new Date(session.date).toLocaleDateString("en-US", {
+                            {new Date(session.scheduled_at).toLocaleDateString("en-US", {
                               weekday: "short",
                               month: "short",
                               day: "numeric",
@@ -290,12 +238,15 @@ export default function SessionsPage() {
                         <div className="flex items-center gap-1">
                           <Clock className="w-4 h-4" />
                           <span>
-                            {session.time} ({session.duration})
+                            {new Date(session.scheduled_at).toLocaleTimeString([], {
+                              hour: "2-digit",
+                              minute: "2-digit"
+                            })} (50 min)
                           </span>
                         </div>
                         <div className="flex items-center gap-1">
                           <Icon className="w-4 h-4" />
-                          <span className="capitalize">{session.type} Call</span>
+                          <span className="capitalize">Video Call</span>
                         </div>
                       </div>
                     </div>
@@ -310,69 +261,24 @@ export default function SessionsPage() {
                 </div>
               </Card>
             )
-          })}
+          }) : (
+            <div className="text-center py-12 text-sage-600">
+              <Calendar className="w-16 h-16 mx-auto mb-4 opacity-50" />
+              <p>No upcoming sessions</p>
+              <p className="text-sm mt-2">Book your first therapy session</p>
+            </div>
+          )}
         </div>
       )}
 
       {/* Past Sessions */}
       {activeTab === "past" && (
         <div className="space-y-4">
-          {pastSessions.map((session) => {
-            const Icon = getSessionIcon(session.type)
-            return (
-              <Card key={session.id} className="p-6 border-sage-200">
-                <div className="space-y-4">
-                  <div className="flex items-start justify-between">
-                    <div className="flex gap-4 flex-1">
-                      <div className="w-12 h-12 rounded-full bg-sage-100 flex items-center justify-center">
-                        <User className="w-6 h-6 text-sage-600" />
-                      </div>
-                      <div className="flex-1">
-                        <h3 className="font-semibold text-sage-800 mb-1">{session.therapist}</h3>
-                        <p className="text-sm text-sage-600 mb-3">{session.specialty}</p>
-
-                        <div className="flex flex-wrap gap-4 text-sm text-sage-600">
-                          <div className="flex items-center gap-1">
-                            <Calendar className="w-4 h-4" />
-                            <span>
-                              {new Date(session.date).toLocaleDateString("en-US", {
-                                weekday: "short",
-                                month: "short",
-                                day: "numeric",
-                              })}
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <Clock className="w-4 h-4" />
-                            <span>
-                              {session.time} ({session.duration})
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <Icon className="w-4 h-4" />
-                            <span className="capitalize">{session.type} Call</span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-1">
-                      {[...Array(5)].map((_, i) => (
-                        <span key={i} className={i < session.rating ? "text-yellow-500" : "text-gray-300"}>
-                          ★
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="bg-sage-50 rounded-lg p-4 border border-sage-200">
-                    <p className="text-sm font-medium text-sage-800 mb-1">Session Notes</p>
-                    <p className="text-sm text-sage-600">{session.notes}</p>
-                  </div>
-                </div>
-              </Card>
-            )
-          })}
+          <div className="text-center py-12 text-sage-600">
+            <Calendar className="w-16 h-16 mx-auto mb-4 opacity-50" />
+            <p>No past sessions yet</p>
+            <p className="text-sm mt-2">Your completed therapy sessions will appear here</p>
+          </div>
         </div>
       )}
 
@@ -391,43 +297,10 @@ export default function SessionsPage() {
             </div>
           </Card>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {availableTherapists.map((therapist) => (
-              <Card key={therapist.id} className="p-6 border-sage-200 hover:shadow-lg transition-all">
-                <div className="space-y-4">
-                  <div className="flex items-start gap-4">
-                    <div className="w-16 h-16 rounded-full bg-sage-100 flex items-center justify-center">
-                      <User className="w-8 h-8 text-sage-600" />
-                    </div>
-                    <div className="flex-1">
-                      <h3 className="font-semibold text-sage-800 mb-1">{therapist.name}</h3>
-                      <p className="text-sm text-sage-600 mb-2">{therapist.specialty}</p>
-                      <div className="flex items-center gap-3 text-sm text-sage-600">
-                        <span>{therapist.experience} experience</span>
-                        <span>•</span>
-                        <div className="flex items-center gap-1">
-                          <span className="text-yellow-500">★</span>
-                          <span>{therapist.rating}</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="bg-sage-50 rounded-lg p-3 border border-sage-200">
-                    <p className="text-sm text-sage-600">
-                      <span className="font-medium">Next available:</span> {therapist.nextAvailable}
-                    </p>
-                  </div>
-
-                  <div className="flex gap-2">
-                    <Button className="flex-1 bg-sage-600 hover:bg-sage-700">Book Appointment</Button>
-                    <Button variant="outline" className="border-sage-200 text-sage-700 hover:bg-sage-50 bg-transparent">
-                      View Profile
-                    </Button>
-                  </div>
-                </div>
-              </Card>
-            ))}
+          <div className="text-center py-12 text-sage-600">
+            <User className="w-16 h-16 mx-auto mb-4 opacity-50" />
+            <p>No therapists available at the moment</p>
+            <p className="text-sm mt-2">Therapists will be added soon</p>
           </div>
         </div>
       )}

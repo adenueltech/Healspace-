@@ -8,64 +8,51 @@ import { Textarea } from "@/components/ui/textarea"
 import { Input } from "@/components/ui/input"
 import { BookOpen, Plus, Search, Calendar, Smile, Meh, Frown, Heart, Star, Trash2, Laugh, Angry } from "lucide-react"
 import { getCurrentUser } from "@/lib/auth"
-import { createJournalEntry } from "@/lib/dashboard"
+import { createJournalEntry, getJournalEntries } from "@/lib/dashboard"
 import type { User } from "@/lib/supabase"
 
-const mockEntries = [
-  {
-    id: 1,
-    title: "Feeling Better Today",
-    content:
-      "Had a great therapy session this morning. We talked about coping strategies and I feel more equipped to handle stress. The breathing exercises really help.",
-    date: "2025-01-08",
-    mood: "happy",
-    tags: ["therapy", "progress", "coping"],
-  },
-  {
-    id: 2,
-    title: "Challenging Day at Work",
-    content:
-      "Work was overwhelming today. Multiple deadlines and feeling the pressure. But I remembered to take breaks and practice mindfulness. Small wins.",
-    date: "2025-01-07",
-    mood: "neutral",
-    tags: ["work", "stress", "mindfulness"],
-  },
-  {
-    id: 3,
-    title: "Grateful for Support",
-    content:
-      "Joined a new support group today. It's comforting to know I'm not alone in this journey. Everyone was so welcoming and understanding.",
-    date: "2025-01-06",
-    mood: "happy",
-    tags: ["support", "community", "gratitude"],
-  },
-  {
-    id: 4,
-    title: "Struggling with Anxiety",
-    content:
-      "Anxiety was high today. Couldn't focus on anything. Reached out to my support network and that helped a bit. Tomorrow is a new day.",
-    date: "2025-01-05",
-    mood: "sad",
-    tags: ["anxiety", "support"],
-  },
-]
 
 const moodIcons: Record<string, { icon: React.ComponentType<any>, color: string, bg: string }> = {
-   amazing: { icon: Laugh, color: "text-green-700", bg: "bg-green-100" },
-   good: { icon: Smile, color: "text-green-600", bg: "bg-green-100" },
-   okay: { icon: Meh, color: "text-yellow-600", bg: "bg-yellow-100" },
-   difficult: { icon: Frown, color: "text-orange-600", bg: "bg-orange-100" },
-   terrible: { icon: Angry, color: "text-red-600", bg: "bg-red-100" },
+    amazing: { icon: Laugh, color: "text-green-700", bg: "bg-green-100" },
+    good: { icon: Smile, color: "text-green-600", bg: "bg-green-100" },
+    okay: { icon: Meh, color: "text-yellow-600", bg: "bg-yellow-100" },
+    difficult: { icon: Frown, color: "text-orange-600", bg: "bg-orange-100" },
+    terrible: { icon: Angry, color: "text-red-600", bg: "bg-red-100" },
+}
+
+function calculateStreak(entries: any[]) {
+  if (entries.length === 0) return 0
+
+  const sortedEntries = entries.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+
+  let streak = 0
+  let currentDate = new Date(today)
+
+  for (const entry of sortedEntries) {
+    const entryDate = new Date(entry.created_at)
+    entryDate.setHours(0, 0, 0, 0)
+
+    if (entryDate.getTime() === currentDate.getTime()) {
+      streak++
+      currentDate.setDate(currentDate.getDate() - 1)
+    } else if (entryDate.getTime() < currentDate.getTime()) {
+      break
+    }
+  }
+
+  return streak
 }
 
 export default function JournalPage() {
-   const [user, setUser] = useState<User | null>(null)
-   const [entries, setEntries] = useState(mockEntries)
-   const [isWriting, setIsWriting] = useState(false)
-   const [newEntry, setNewEntry] = useState({ title: "", content: "", mood: "okay", tags: "" })
-   const [searchQuery, setSearchQuery] = useState("")
-   const [loading, setLoading] = useState(true)
-   const [saving, setSaving] = useState(false)
+    const [user, setUser] = useState<User | null>(null)
+    const [entries, setEntries] = useState<any[]>([])
+    const [isWriting, setIsWriting] = useState(false)
+    const [newEntry, setNewEntry] = useState({ title: "", content: "", mood: "okay", tags: "" })
+    const [searchQuery, setSearchQuery] = useState("")
+    const [loading, setLoading] = useState(true)
+    const [saving, setSaving] = useState(false)
 
    useEffect(() => {
      async function initializeJournal() {
@@ -74,7 +61,8 @@ export default function JournalPage() {
          if (!currentUser) return
 
          setUser(currentUser)
-         // Load journal entries from database would go here
+         const journalEntries = await getJournalEntries(currentUser.id)
+         setEntries(journalEntries)
        } catch (error) {
          console.error("Failed to load journal:", error)
        } finally {
@@ -95,16 +83,8 @@ export default function JournalPage() {
 
        await createJournalEntry(user.id, newEntry.title, newEntry.content, tags, moodScore)
 
-       const entry = {
-         id: entries.length + 1,
-         title: newEntry.title,
-         content: newEntry.content,
-         date: new Date().toISOString().split("T")[0],
-         mood: newEntry.mood as keyof typeof moodIcons,
-         tags,
-       }
-
-       setEntries([entry, ...entries])
+       const savedEntry = await createJournalEntry(user.id, newEntry.title, newEntry.content, tags, moodScore)
+       setEntries([savedEntry, ...entries])
        setNewEntry({ title: "", content: "", mood: "okay", tags: "" })
        setIsWriting(false)
      } catch (error) {
@@ -168,7 +148,7 @@ export default function JournalPage() {
               <Smile className="w-6 h-6 text-green-600" />
             </div>
             <div>
-              <p className="text-2xl font-bold text-sage-800">{entries.filter((e) => e.mood === "happy").length}</p>
+              <p className="text-2xl font-bold text-sage-800">{entries.filter((e) => (e.mood_score || 0) >= 4).length}</p>
               <p className="text-sm text-sage-600">Happy Days</p>
             </div>
           </div>
@@ -179,7 +159,7 @@ export default function JournalPage() {
               <Calendar className="w-6 h-6 text-sage-600" />
             </div>
             <div>
-              <p className="text-2xl font-bold text-sage-800">7</p>
+              <p className="text-2xl font-bold text-sage-800">{calculateStreak(entries)}</p>
               <p className="text-sm text-sage-600">Day Streak</p>
             </div>
           </div>
@@ -190,7 +170,7 @@ export default function JournalPage() {
               <Star className="w-6 h-6 text-sage-600" />
             </div>
             <div>
-              <p className="text-2xl font-bold text-sage-800">3</p>
+              <p className="text-2xl font-bold text-sage-800">{entries.filter((e) => e.is_favorite).length}</p>
               <p className="text-sm text-sage-600">Favorites</p>
             </div>
           </div>
@@ -286,22 +266,25 @@ export default function JournalPage() {
       {/* Entries */}
       <div className="space-y-4">
         {filteredEntries.map((entry) => {
-          const MoodIcon = moodIcons[entry.mood].icon
+            const moodScore = entry.mood_score || 3
+            const moodKey = moodScore >= 5 ? 'amazing' : moodScore >= 4 ? 'good' : moodScore >= 3 ? 'okay' : moodScore >= 2 ? 'difficult' : 'terrible'
+            const moodData = moodIcons[moodKey as keyof typeof moodIcons]
+            const MoodIcon = moodData?.icon || moodIcons.okay.icon
           return (
             <Card key={entry.id} className="p-6 border-sage-200 hover:shadow-lg transition-all">
               <div className="space-y-3">
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
                     <div className="flex items-center gap-3 mb-2">
-                      <div className={`p-2 rounded-lg ${moodIcons[entry.mood].bg}`}>
-                        <MoodIcon className={`w-5 h-5 ${moodIcons[entry.mood].color}`} />
+                      <div className={`p-2 rounded-lg ${moodData.bg}`}>
+                        <MoodIcon className={`w-5 h-5 ${moodData.color}`} />
                       </div>
                       <div>
                         <h3 className="text-lg font-semibold text-sage-800">{entry.title}</h3>
                         <div className="flex items-center gap-2 text-sm text-sage-600">
                           <Calendar className="w-4 h-4" />
                           <span>
-                            {new Date(entry.date).toLocaleDateString("en-US", {
+                            {new Date(entry.created_at).toLocaleDateString("en-US", {
                               weekday: "long",
                               year: "numeric",
                               month: "long",

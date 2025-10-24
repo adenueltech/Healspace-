@@ -29,9 +29,11 @@ export default function ChatPage() {
 
         setUser(currentUser)
 
-        // Load chat messages
-        const chatMessages = await getChatMessages()
-        setMessages(chatMessages)
+        // Load chat messages for this user only
+        const chatMessages = await getChatMessages(undefined, 50)
+        // Filter messages for this user
+        const userMessages = chatMessages.filter(msg => msg.user_id === currentUser.id)
+        setMessages(userMessages)
       } catch (error) {
         console.error("Failed to initialize chat:", error)
       } finally {
@@ -41,7 +43,7 @@ export default function ChatPage() {
 
     initializeChat()
 
-    // Subscribe to real-time messages
+    // Subscribe to real-time messages for this user only
     const channel = supabase
       .channel('chat_messages')
       .on('postgres_changes', {
@@ -50,14 +52,17 @@ export default function ChatPage() {
         table: 'chat_messages'
       }, (payload) => {
         const newMessage = payload.new as ChatMessage
-        setMessages(prev => [...prev, newMessage])
+        // Only add messages from this user
+        if (newMessage.user_id === user?.id) {
+          setMessages(prev => [...prev, newMessage])
+        }
       })
       .subscribe()
 
     return () => {
       supabase.removeChannel(channel)
     }
-  }, [])
+  }, [user?.id])
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -78,9 +83,9 @@ export default function ChatPage() {
     <div className="space-y-4 sm:space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Anonymous Chat</h1>
+        <h1 className="text-2xl sm:text-3xl font-bold text-foreground">My Chat History</h1>
         <p className="text-muted-foreground mt-1 sm:mt-2 text-sm sm:text-base">
-          Connect with peers in a safe, anonymous environment
+          View your private chat conversations
         </p>
       </div>
 
@@ -91,7 +96,7 @@ export default function ChatPage() {
           <div>
             <h3 className="font-semibold text-foreground text-sm sm:text-base">Your Privacy is Protected</h3>
             <p className="text-xs sm:text-sm text-muted-foreground mt-1">
-              All chats are anonymous and encrypted. Your identity is never shared.
+              Your chat history is private and secure. Only you can see your messages.
             </p>
           </div>
         </div>
@@ -116,8 +121,8 @@ export default function ChatPage() {
 
             <div className="text-center py-8 text-muted-foreground">
               <MessageCircle className="w-12 h-12 mx-auto mb-4 opacity-50" />
-              <p className="text-sm">Welcome to the anonymous chat room</p>
-              <p className="text-xs mt-2">All messages are real-time and anonymous</p>
+              <p className="text-sm">Your personal chat history</p>
+              <p className="text-xs mt-2">Messages are private and for your account only</p>
             </div>
           </div>
         </Card>
@@ -132,8 +137,8 @@ export default function ChatPage() {
                   <MessageCircle className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
                 </div>
                 <div className="min-w-0">
-                  <h3 className="font-semibold text-foreground text-sm sm:text-base truncate">Anonymous Chat Room</h3>
-                  <p className="text-xs text-muted-foreground">Real-time anonymous conversations</p>
+                  <h3 className="font-semibold text-foreground text-sm sm:text-base truncate">Your Chat History</h3>
+                  <p className="text-xs text-muted-foreground">Private conversations for your account</p>
                 </div>
               </div>
               <Badge variant="secondary" className="bg-green-100 text-green-800">
@@ -202,7 +207,7 @@ export default function ChatPage() {
               </Button>
             </div>
             <p className="text-xs text-muted-foreground mt-2">
-              Your message will be sent anonymously and in real-time
+              Your message will be sent privately and securely
             </p>
           </form>
         </Card>

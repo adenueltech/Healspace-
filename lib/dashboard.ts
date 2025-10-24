@@ -103,6 +103,18 @@ export async function createJournalEntry(userId: string, title: string, content:
   return data
 }
 
+export async function getJournalEntries(userId: string, limit: number = 50) {
+  const { data, error } = await supabase
+    .from('journal_entries')
+    .select('*')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false })
+    .limit(limit)
+
+  if (error) throw error
+  return data || []
+}
+
 export async function sendChatMessage(userId: string, content: string, roomId?: string, isAnonymous: boolean = true) {
   const { data, error } = await supabase
     .from('chat_messages')
@@ -157,4 +169,14 @@ export async function joinSupportGroup(userId: string, groupId: string) {
 
   if (error) throw error
   return data
+}
+
+export async function getUserGroupMemberships(userId: string) {
+  const { data, error } = await supabase
+    .from('group_memberships')
+    .select('group_id')
+    .eq('user_id', userId)
+
+  if (error) throw error
+  return data?.map(item => item.group_id) || []
 }

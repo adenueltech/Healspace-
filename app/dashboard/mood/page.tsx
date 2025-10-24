@@ -9,6 +9,12 @@ import { getCurrentUser } from "@/lib/auth"
 import { logMood, getMoodHistory } from "@/lib/dashboard"
 import type { User } from "@/lib/supabase"
 
+interface MoodEntry {
+  date: string
+  mood: number
+  note: string
+}
+
 const moodOptions = [
   { value: 5, label: "Amazing", icon: Laugh, color: "text-green-600", bg: "bg-green-100", border: "border-green-400" },
   { value: 4, label: "Good", icon: Smile, color: "text-green-500", bg: "bg-green-50", border: "border-green-300" },
@@ -24,15 +30,6 @@ const moodOptions = [
   { value: 1, label: "Difficult", icon: Angry, color: "text-red-600", bg: "bg-red-100", border: "border-red-400" },
 ]
 
-const mockMoodHistory = [
-  { date: "2025-01-08", mood: 4, note: "Had a productive day at work" },
-  { date: "2025-01-07", mood: 3, note: "Feeling neutral, nothing special" },
-  { date: "2025-01-06", mood: 5, note: "Great therapy session!" },
-  { date: "2025-01-05", mood: 2, note: "Struggling with anxiety" },
-  { date: "2025-01-04", mood: 4, note: "Good day overall" },
-  { date: "2025-01-03", mood: 3, note: "Average day" },
-  { date: "2025-01-02", mood: 4, note: "Feeling better" },
-]
 
 const factors = [
   "Sleep Quality",
@@ -50,7 +47,7 @@ export default function MoodTrackerPage() {
    const [selectedMood, setSelectedMood] = useState<number | null>(null)
    const [note, setNote] = useState("")
    const [selectedFactors, setSelectedFactors] = useState<string[]>([])
-   const [moodHistory, setMoodHistory] = useState(mockMoodHistory)
+   const [moodHistory, setMoodHistory] = useState<MoodEntry[]>([])
    const [loading, setLoading] = useState(true)
    const [saving, setSaving] = useState(false)
 
@@ -310,3 +307,4 @@ export default function MoodTrackerPage() {
     </div>
   )
 }
+

@@ -34,6 +34,11 @@ export default function DashboardPage() {
   const [recentActivity, setRecentActivity] = useState<any[]>([])
   const [upcomingSessions, setUpcomingSessions] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const [wellnessGoals, setWellnessGoals] = useState({
+    dailyMoodCheck: 7,
+    weeklyJournalEntries: 4,
+    supportGroupSessions: 2
+  })
 
   useEffect(() => {
     async function loadDashboardData() {
@@ -54,6 +59,18 @@ export default function DashboardPage() {
         setMoodHistory(moodData)
         setRecentActivity(activityData)
         setUpcomingSessions(sessionsData)
+
+        // Calculate wellness goals based on real data
+        const today = new Date().toISOString().split('T')[0]
+        const thisWeekMoods = moodData.filter((entry: any) =>
+          new Date(entry.created_at).toISOString().split('T')[0] >= new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+        ).length
+
+        setWellnessGoals({
+          dailyMoodCheck: thisWeekMoods,
+          weeklyJournalEntries: dashboardStats.journalEntries,
+          supportGroupSessions: dashboardStats.supportGroups
+        })
       } catch (error) {
         console.error("Failed to load dashboard data:", error)
       } finally {
@@ -118,7 +135,7 @@ export default function DashboardPage() {
             <TrendingUp className="h-4 w-4 text-primary" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-foreground">14 days</div>
+            <div className="text-2xl font-bold text-foreground">{Math.max(1, Math.floor(stats.journalEntries / 7 * 14))} days</div>
             <p className="text-xs text-muted-foreground mt-1">Keep it up!</p>
           </CardContent>
         </Card>
@@ -319,23 +336,23 @@ export default function DashboardPage() {
                 <div>
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-sm font-medium">Daily Mood Check-in</span>
-                    <span className="text-sm text-muted-foreground">7/7</span>
+                    <span className="text-sm text-muted-foreground">{wellnessGoals.dailyMoodCheck}/7</span>
                   </div>
-                  <Progress value={100} className="h-2" />
+                  <Progress value={(wellnessGoals.dailyMoodCheck / 7) * 100} className="h-2" />
                 </div>
                 <div>
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-sm font-medium">Weekly Journal Entries</span>
-                    <span className="text-sm text-muted-foreground">4/5</span>
+                    <span className="text-sm text-muted-foreground">{wellnessGoals.weeklyJournalEntries}/5</span>
                   </div>
-                  <Progress value={80} className="h-2" />
+                  <Progress value={(wellnessGoals.weeklyJournalEntries / 5) * 100} className="h-2" />
                 </div>
                 <div>
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-sm font-medium">Support Group Sessions</span>
-                    <span className="text-sm text-muted-foreground">2/3</span>
+                    <span className="text-sm text-muted-foreground">{wellnessGoals.supportGroupSessions}/3</span>
                   </div>
-                  <Progress value={66} className="h-2" />
+                  <Progress value={(wellnessGoals.supportGroupSessions / 3) * 100} className="h-2" />
                 </div>
               </div>
             </CardContent>

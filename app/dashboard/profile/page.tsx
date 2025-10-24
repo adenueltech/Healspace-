@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -26,44 +26,115 @@ import {
   Users,
   BookOpen,
 } from "lucide-react"
+import { getCurrentUser, updateProfile } from "@/lib/auth"
+import { getDashboardStats } from "@/lib/dashboard"
+import type { User as UserType } from "@/lib/supabase"
 
 export default function ProfilePage() {
-  const [isEditing, setIsEditing] = useState(false)
-  const [profileData, setProfileData] = useState({
-    firstName: "John",
-    lastName: "Doe",
-    email: "john@example.com",
-    phone: "+1 (555) 123-4567",
-    location: "San Francisco, CA",
-    dateOfBirth: "1990-05-15",
-    bio: "Passionate about mental health advocacy and helping others on their wellness journey.",
-    occupation: "Software Engineer",
-    interests: ["Mental Health", "Technology", "Meditation", "Running"],
-  })
+   const [user, setUser] = useState<UserType | null>(null)
+   const [isEditing, setIsEditing] = useState(false)
+   const [loading, setLoading] = useState(true)
+   const [saving, setSaving] = useState(false)
+   const [profileData, setProfileData] = useState({
+     firstName: "",
+     lastName: "",
+     email: "",
+     phone: "",
+     location: "",
+     dateOfBirth: "",
+     bio: "",
+     occupation: "",
+     interests: [] as string[],
+   })
 
-  const [privacySettings, setPrivacySettings] = useState({
-    hideDateOfBirth: true,
-    hidePhone: false,
-    hideLocation: false,
-    hideOccupation: false,
-    hideInterests: false,
-    anonymousMode: true,
-    showActivity: false,
-    allowMessages: true,
-  })
+   const [privacySettings, setPrivacySettings] = useState({
+     hideDateOfBirth: true,
+     hidePhone: false,
+     hideLocation: false,
+     hideOccupation: false,
+     hideInterests: false,
+     anonymousMode: true,
+     showActivity: false,
+     allowMessages: true,
+   })
 
-  const handleSave = () => {
-    // Mock save functionality
-    setIsEditing(false)
-    // In a real app, this would save to backend
+   const [stats, setStats] = useState([
+     { label: "Journal Entries", value: "0", icon: BookOpen },
+     { label: "Support Groups", value: "0", icon: Users },
+     { label: "Chat Sessions", value: "0", icon: MessageSquare },
+     { label: "Achievements", value: "0", icon: Award },
+   ])
+
+   useEffect(() => {
+     async function loadProfile() {
+       try {
+         const currentUser = await getCurrentUser()
+         if (!currentUser) return
+
+         setUser(currentUser)
+
+         // Load dashboard stats
+         const dashboardStats = await getDashboardStats(currentUser.id)
+         setStats([
+           { label: "Journal Entries", value: dashboardStats.journalEntries.toString(), icon: BookOpen },
+           { label: "Support Groups", value: dashboardStats.supportGroups.toString(), icon: Users },
+           { label: "Chat Sessions", value: dashboardStats.chatSessions.toString(), icon: MessageSquare },
+           { label: "Achievements", value: "0", icon: Award },
+         ])
+
+         // Set profile data from user
+         setProfileData({
+           firstName: currentUser.full_name?.split(' ')[0] || "",
+           lastName: currentUser.full_name?.split(' ').slice(1).join(' ') || "",
+           email: currentUser.email || "",
+           phone: "",
+           location: "",
+           dateOfBirth: "",
+           bio: "",
+           occupation: "",
+           interests: [],
+         })
+       } catch (error) {
+         console.error("Failed to load profile:", error)
+       } finally {
+         setLoading(false)
+       }
+     }
+
+     loadProfile()
+   }, [])
+
+   const handleSave = async () => {
+     if (!user) return
+
+     setSaving(true)
+     try {
+       const fullName = `${profileData.firstName} ${profileData.lastName}`.trim()
+       await updateProfile({
+         full_name: fullName,
+         // Add other fields as needed
+       })
+       setIsEditing(false)
+     } catch (error) {
+       console.error("Failed to save profile:", error)
+     } finally {
+       setSaving(false)
+     }
+   }
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-3xl font-bold text-foreground">Profile</h1>
+          <p className="text-muted-foreground mt-2">Manage your personal information and privacy settings</p>
+        </div>
+        <div className="flex items-center justify-center h-64">
+          <div className="text-foreground">Loading profile...</div>
+        </div>
+      </div>
+    )
   }
-
-  const stats = [
-    { label: "Journal Entries", value: "28", icon: BookOpen },
-    { label: "Support Groups", value: "3", icon: Users },
-    { label: "Chat Sessions", value: "12", icon: MessageSquare },
-    { label: "Achievements", value: "5", icon: Award },
-  ]
 
   return (
     <div className="space-y-6">
@@ -96,9 +167,9 @@ export default function ProfilePage() {
               <div className="flex-1 space-y-4">
                 <div>
                   <h2 className="text-2xl font-semibold text-foreground">
-                    {profileData.firstName} {profileData.lastName}
+                    {user?.full_name || 'User'}
                   </h2>
-                  <p className="text-muted-foreground">{profileData.email}</p>
+                  <p className="text-muted-foreground">{user?.email}</p>
                   {privacySettings.anonymousMode && (
                     <Badge className="mt-2 bg-primary/10 text-primary border-0">
                       <Shield className="w-3 h-3 mr-1" />
@@ -237,14 +308,15 @@ export default function ProfilePage() {
 
             {isEditing && (
               <div className="flex gap-3 mt-6 pt-6 border-t border-border">
-                <Button onClick={handleSave} className="bg-primary hover:bg-primary/90">
+                <Button onClick={handleSave} className="bg-primary hover:bg-primary/90" disabled={saving}>
                   <Save className="w-4 h-4 mr-2" />
-                  Save Changes
+                  {saving ? "Saving..." : "Save Changes"}
                 </Button>
                 <Button
                   variant="outline"
                   onClick={() => setIsEditing(false)}
                   className="border-border text-foreground hover:bg-secondary"
+                  disabled={saving}
                 >
                   Cancel
                 </Button>
